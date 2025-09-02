@@ -108,7 +108,8 @@ def generate_stimulus(dt, t_tot, events,
         I[ind:ind+n_samp_stim] = 1
 
     Ip = 60 * I  # Modified input for p
-    Ii = 60 * 0.56 * I  # Modified input for i, using r = 0.56
+    #Ii = 60 * 0.56 * I  # Modified input for i, using r = 0.56
+    Ii = 30 * I   # fix : to provide half of Ip
 
     if return_time:
         return I, Ip, Ii, t
@@ -518,10 +519,11 @@ class JRSimulator:
         raw_clean = raw.copy()
 
         # If a noise factor is provided, add noise and compute SNR.
-        if noise_fact:
+        if noise_fact:  # fix it to self.noise
             noise_cov = self.noise_cov.copy()
-            noise_cov['data'] = noise_cov.data * noise_fact
+            noise_cov['data'] = noise_cov.data * noise_fact # fix it to self.noise
             mne.simulation.add_noise(raw, cov=noise_cov, random_state=seed)
+
 
             signal_power = np.mean(raw_clean.get_data()**2)
             noise_power = np.mean((raw.get_data() - raw_clean.get_data())**2)
