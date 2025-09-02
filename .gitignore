@@ -1,1 +1,6 @@
 notebooks/
+__pycache__/
+*.pyc
+.venv/
+*.nc
+*.keras
