@@ -62,6 +62,11 @@ python -m scripts.download_artifacts --output-dir data/eegdenoisenet
 sbatch slurm/eog_10db.slurm
 ```
 
+The data preparer uses the local Git LFS cache when `git-lfs` is available. On
+clusters such as Triton where it is not installed, it automatically downloads
+the two pinned files from GitHub's media endpoint and verifies their exact byte
+counts and SHA-256 hashes before training.
+
 The job writes its log to `slurm-eog10-JOBID.out` and its full metrics,
 predictions, models, training histories, environment record, and paired recovery
 decision to `results/eog_10db_recovery/`.
