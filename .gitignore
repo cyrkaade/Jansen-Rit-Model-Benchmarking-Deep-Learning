@@ -4,3 +4,11 @@ __pycache__/
 .venv/
 *.nc
 *.keras
+AGENTS.md
+CODEX_IMPLEMENTATION_PROMPT.md
+data/
+results/
+tmp/
+.pytest_cache/
+*.egg-info/
+slurm-*.out
