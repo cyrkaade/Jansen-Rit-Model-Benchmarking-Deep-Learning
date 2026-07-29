@@ -1,0 +1,51 @@
+# Preregistered pilot. This file is frozen before any novel-noise results are
+# inspected. The pilot must not run unless the baseline gate passes.
+experiment: bi_noise_robustness_pilot
+baseline_gate: results/baseline/seed_68/status.json
+data:
+  clean_path: data/cache/upstream/xarr_all_1000.nc
+  clean_sha256: 8a68c3f6b57c6aac641fc3ebb0f19ba406c1426aecb55526cbc855ca12b84eee
+  clean_bytes: 615006452
+  original_path: data/cache/upstream/xarr_noise_all_1000_1.nc
+  original_sha256: 5958968acf7fd8eedec126119e27c0b396588446b5ab61fac02c610411cf4272
+  original_bytes: 615006452
+  artifacts_path: data/eegdenoisenet
+  artifact_sampling_rate: 256.0
+  input_scale: 100.0
+seeds: [17, 42, 68]
+split_seed: 68
+target: b_i
+train_conditions: [original, domain_randomized]
+test_conditions: [clean, original, colored_1_f, eog, emg]
+primary_metric: pearson
+secondary_metrics: [spearman, rmse, nrmse, mae]
+paired_clean_observations: true
+# Resolved from the paired original-noise training observations at runtime and
+# written to results/pilot/frozen_config.yaml before model fitting.
+snr_db: null
+snr_policy: median_paired_original_train
+stronger_fallback_snr_db: 10.0
+model:
+  embed_dim: 256
+  num_heads: 8
+  intermediate_dim: 1024
+  dropout: 0.2
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  device: cpu
+  num_threads: 8
+noise:
+  spectral_exponent: 1.0
+  eog_topography: random_frontal
+  eog_frontal_power: 3.0
+  emg_centers: [T7, T8, P7, P8]
+  emg_spatial_sigma_m: 0.045
+output_dir: results/pilot
+decision_thresholds:
+  pearson_drop: 0.10
+  nrmse_relative_rise: 0.15
+  recovery_fraction: 0.50
+  max_matched_pearson_cost: 0.05
+status: blocked_until_baseline_passes

@@ -1,5 +1,72 @@
 # Jansen-Rit-Model-Benchmarking-Deep-Learning
-Code repository for the **Benchmarking Deep Jansen-Rit Parameter Inference: An in Silico Study**. The preprint for this paper is available [here](https://arxiv.org/html/2406.05002v1).
+
+## Reproducible `b_i` robustness pilot
+
+The scripted pilot is baseline-gated. It first checks the paper's qualitative
+result that the EEG Transformer strongly recovers `b_i` under the original MNE
+ad-hoc covariance noise. Generated datasets, checkpoints, and results stay in
+ignored `data/` and `results/` directories.
+
+Create the tested Python 3.13 environment and run the fast smoke test:
+
+```powershell
+uv venv --python 3.13
+uv pip install --python .venv/Scripts/python.exe -r requirements-repro.txt
+.venv/Scripts/python.exe -m pytest -q
+.venv/Scripts/python.exe -m scripts.smoke_test --seed 17
+```
+
+Prepare the historical matched-noise dataset (615 MB, hash-verified) and run the
+baseline gate:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/prepare_upstream_baseline.ps1
+.venv/Scripts/python.exe -m scripts.reproduce_baseline --config configs/baseline.yaml
+```
+
+Only after `results/baseline/seed_68/status.json` reports `passed`, prepare the
+paired clean data and EEGdenoiseNet artifacts, validate the registered noise
+families, and run the three-seed pilot:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/prepare_upstream_clean.ps1
+.venv/Scripts/python.exe -m scripts.download_artifacts --output-dir data/eegdenoisenet
+.venv/Scripts/python.exe -m scripts.noise_diagnostics --snr-db 50.688213 --output-dir results/pilot/diagnostics_primary
+.venv/Scripts/python.exe -m scripts.noise_diagnostics --snr-db 10 --output-dir results/pilot/diagnostics_stronger
+.venv/Scripts/python.exe -m scripts.run_pilot --config configs/pilot.yaml
+```
+
+EEGdenoiseNet data are pinned to commit
+`8d290661146c7189c98cc04812d37371d4b9426c`; the download script verifies the
+expected EOG/EMG shapes and records hashes and sizes in the ignored data
+manifest. Artifact epochs are resampled from 256 Hz to 1,000 Hz and partitioned
+before sampling so evaluation waveforms never appear in training.
+
+The paper states Python 3.12 with PyTorch 1.9, but that combination is not
+supported. `requirements-repro.txt` documents the tested compatibility update;
+every run also records package versions, Git revision/status, configuration,
+metrics, predictions, and training history. See `research/experiment_card.md`
+for preregistration details and known upstream ambiguities.
+
+### Focused 10 dB EOG recovery experiment on Aalto Triton
+
+The follow-up experiment is self-contained: it retrains the historical-noise
+control and a severity-matched 10 dB EOG model for seeds 17, 42, and 68, then
+evaluates both models on the same historical and 10 dB EOG test observations.
+On Triton, prepare the ignored datasets and artifacts once, then submit the CPU
+batch job:
+
+```bash
+python -m scripts.prepare_upstream_data --dataset all
+python -m scripts.download_artifacts --output-dir data/eegdenoisenet
+sbatch slurm/eog_10db.slurm
+```
+
+The job writes its log to `slurm-eog10-JOBID.out` and its full metrics,
+predictions, models, training histories, environment record, and paired recovery
+decision to `results/eog_10db_recovery/`.
+
+Code repository for the **Benchmarking Deep Jansen-Rit Parameter Inference: An in Silico Study**. The authoritative revised preprint is available [here](https://arxiv.org/html/2406.05002v2).
 
 
 Model-driven effective connectivity (EC) is essential in understanding how the brain integrates and responds to various stimuli. This approach involves estimating global and local parameters of a generative model of neural activity, and it can be deployed for various applications, such as studying neurodevelopmental disorders. However, accurately determining these connections remains a significant challenge due to the complexity of brain dynamics and the inherent noise in recordings of neural activity, e.g., in electroencephalography (EEG). Current model-driven methods to study EC are computationally complex and cannot scale to all brain regions as required by comprehensive whole-brain analyses. To facilitate EC assessment, an inference algorithm must exhibit reliable prediction of parameters in the presence of noise. Further, the relationship between the model parameters and the neural recordings must be learnable. To progress toward these objectives, we present a simulation module based on the well-known Jansen-Rit neural mass model (JR-NMM) and benchmark it under various noise conditions. We consider simulated recordings with noise levels ranging from none to levels typical of real EEG recordings and simulate 1000 recordings per noise condition. We then benchmark the performance of a Bi-LSTM model to infer JR-NMM parameters from EEG amidst different noise levels. Our study explores how the JR-NMM reacts to changes in critical factors like synaptic gains and time constants. Investigating how such biological parameters impact the neural recordings generated by such models is crucial in understanding the connection between brain activity and behavior. Our results indicate that we can predict the local JR-NMM parameters from EEG, supporting the feasibility of this approach. In the future, we will extend this inference approach to estimating local and global parameters from real EEG in clinically relevant applications, such as autism spectrum disorder.
